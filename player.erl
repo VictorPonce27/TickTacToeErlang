@@ -25,11 +25,12 @@ print(ServerName) ->
 end. 
 
 board(Board, X) ->
-    if X < 3 ->
-	   io:fwrite("~w", [tuple_to_list(element(X, Board))]),
-	   board(Board, X + 1);
+    if 
+        X < 3 ->
+            io:fwrite("~w", [tuple_to_list(element(X, Board))]),
+            board(Board, X + 1);
        true ->
-	   io:fwrite("~w", [tuple_to_list(element(X, Board))])
+	        io:fwrite("~w", [tuple_to_list(element(X, Board))])
     end.
 
 % move(ServerName, Move,Symbol) ->
