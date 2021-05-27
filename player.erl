@@ -20,16 +20,17 @@ register_with_server(ServerName) ->
 
 print(ServerName) ->
     {central_server, ServerName} ! {print, self()},
-    receive {success, GameBoard} -> GameBoard,
-    board(GameBoard,0)
+    receive 
+        {gameboard, GameBoard} -> GameBoard,
+    board(GameBoard,1)
 end. 
 
 board(Board, X) ->
     if X < 3 ->
-	   io:fwrite("~w", [tuple_to_list(element(X, Board))]),
+	   io:fwrite("~p,~n", [tuple_to_list(element(X, Board))]),
 	   board(Board, X + 1);
        true ->
-	   io:fwrite("~w", [tuple_to_list(element(X, Board))])
+	   io:fwrite("~p,~n", [tuple_to_list(element(X, Board))])
     end.
 
 % move(ServerName, Move,Symbol) ->
