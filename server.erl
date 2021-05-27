@@ -42,6 +42,7 @@ game_controller(GameStatus) ->
 	  NewGameStatus = element(2, RegistrationResult),
 	  PlayerId ! ResponseForUser,
 	  game_controller(NewGameStatus);
+
       {get_players, From} ->
 	  From ! maps:get(players, GameStatus),
 	  game_controller(GameStatus);
@@ -52,9 +53,10 @@ game_controller(GameStatus) ->
       %     Done = element(3,PlayResult),
       %     game_controller(NewStatus);
       {print, PlayerId} ->
-	  Board = maps:get(board, GameStatus),
+	  Board = {gameboard, maps:get(board, GameStatus)},
 	  PlayerId ! Board,
 	  game_controller(GameStatus);
+
       {exit} -> io:fwrite("See you!")
     end.
 
@@ -62,9 +64,9 @@ start_server() ->
     % Here, we initialize the map and status
     io:format("Starting the server~n"),
     io:format("Handling game ~n"),
-    Gameboard = {{"-", "-", "-"}, 
-                 {"-", "-", "-"},
-		         {"-", "-", "-"}},
+    Gameboard = {{" - ", " - ", " - "}, 
+                 {" - ", " - ", " - "},
+		         {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
 		      score => [0, 0, 0]},
