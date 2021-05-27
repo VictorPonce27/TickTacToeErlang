@@ -69,7 +69,8 @@ start_server() ->
     io:format("Starting the server~n"),
     io:format("Handling game ~n"),
     Gameboard = {{" - ", " - ", " - "},
-		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
+		 		{" - ", " - ", " - "}, 
+				{" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
 		      score => [0, 0, 0]},
@@ -123,8 +124,16 @@ holder(Move,Board) ->
 	X = element(1, Move),
 	Y = element(2, Move),
 	S = element(3, Move),
-	NewBoard = setelement(X,element(Y,Board),S), 
-	NewBoard2 = setelement(X,Board,NewBoard).
+	Compare = element(X,element(Y,Board)),
+
+	if 
+        Compare == " - "  -> 
+			NewBoard = setelement(X,element(Y,Board),S), 
+			NewBoard2 = setelement(X,Board,NewBoard);
+		true -> 
+			io:fwrite("Invalid position try again"),
+			Board
+	end.
 
 play(GameBoard, PlayerID, Move) ->
     % NewBoard = holder(Move,GameBoard).
@@ -143,4 +152,3 @@ board(Board, X) ->
 % TODO: Set symbol on the board. 
 % start_game() ->
 %     spawn(play(#{}))
-
