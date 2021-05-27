@@ -1,6 +1,6 @@
 -module(player).
 
--export([print/1, register_with_server/1]).
+-export([move/2, print/1, register_with_server/1]).
 
 % Call like: player:register_with_server('server@DESKTOP-V6V2QAT').
 register_with_server(ServerName) ->
@@ -17,6 +17,13 @@ register_with_server(ServerName) ->
 %         {done,} ->
 %     end,
 %     _.
+
+move(ServerName, X) ->
+    {central_server, ServerName} ! {move, X, self()},
+    receive
+        {ok, Message} -> Message,
+    io:fwrite("~s,~n", [Message])
+end.
 
 print(ServerName) ->
     {central_server, ServerName} ! {print, self()},
