@@ -1,10 +1,6 @@
 -module(player).
 
-<<<<<<< HEAD
--export([print/1, register_with_server/1, board/2]).
-=======
 -export([print/1, register_with_server/1, move/1]).
->>>>>>> 7a4ad21f963194813410d52a53ea9593bed8836a
 
 % Call like: player:register_with_server('server@DESKTOP-V6V2QAT').
 register_with_server(ServerName) ->
