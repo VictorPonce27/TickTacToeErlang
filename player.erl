@@ -1,6 +1,6 @@
 -module(player).
 
--export([print/1, register_with_server/1]).
+-export([print/1, register_with_server/1, move/1]).
 
 % Call like: player:register_with_server('server@DESKTOP-V6V2QAT').
 register_with_server(ServerName) ->
@@ -23,6 +23,15 @@ print(ServerName) ->
     receive 
         {gameboard, GameBoard} -> GameBoard,
     board(GameBoard,1)
+end. 
+
+move(ServerName) -> 
+    {ok, X} = io:read("Enter your position for X: "), 
+    {ok, Y} = io:read("Enter your position for Y: "), 
+    Move = [X,Y], 
+    {central_server, ServerName} ! {move,self(),Move}, 
+    receive 
+        {confirm, Answer} -> Answer
 end. 
 
 board(Board, X) ->
