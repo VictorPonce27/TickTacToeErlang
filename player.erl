@@ -27,10 +27,10 @@ end.
 
 board(Board, X) ->
     if X < 3 ->
-	   io:fwrite("~p,~n", [tuple_to_list(element(X, Board))]),
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
 	   board(Board, X + 1);
        true ->
-	   io:fwrite("~p,~n", [tuple_to_list(element(X, Board))])
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
     end.
 
 % move(ServerName, Move,Symbol) ->

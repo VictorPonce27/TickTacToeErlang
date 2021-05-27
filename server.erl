@@ -64,9 +64,9 @@ start_server() ->
     % Here, we initialize the map and status
     io:format("Starting the server~n"),
     io:format("Handling game ~n"),
-    Gameboard = {{"-", "-", "-"}, 
-                 {"-", "-", "-"},
-		         {"-", "-", "-"}},
+    Gameboard = {{" - ", " - ", " - "}, 
+                 {" - ", " - ", " - "},
+		         {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
 		      score => [0, 0, 0]},
