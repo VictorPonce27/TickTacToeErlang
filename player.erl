@@ -28,10 +28,12 @@ end.
 move(ServerName) -> 
     {ok, X} = io:read("Enter your position for X: "), 
     {ok, Y} = io:read("Enter your position for Y: "), 
-    Move = [X,Y], 
+    {ok, S} = io:read("Enter your symbol: "),
+    Move = {X,Y,S}, 
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
-        {confirm, Answer} -> Answer
+        {confirm, Answer} -> Answer,
+        board(Answer,1)
 end. 
 
 board(Board, X) ->

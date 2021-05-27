@@ -119,14 +119,28 @@ internal_register_player(PlayersList) ->
 % play(Map) ->
 %     receive
 %         {play, Row, Col, Symbol} ->
-holder(Move) -> 
-	io:fwrite("working").
+holder(Move,Board) -> 
+	X = element(1, Move),
+	Y = element(2, Move),
+	S = element(3, Move),
+	NewBoard = setelement(X,element(Y,Board),S), 
+	NewBoard2 = setelement(X,Board,NewBoard).
 
 play(GameBoard, PlayerID, Move) ->
-    holder(Move), 
-	Something = GameBoard. 
+    % NewBoard = holder(Move,GameBoard).
+	holder(Move,GameBoard).
 
 
+
+board(Board, X) ->
+    if X < 3 ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
+	   board(Board, X + 1);
+       true ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
+    end.
+
+% TODO: Set symbol on the board. 
 % start_game() ->
 %     spawn(play(#{}))
 
