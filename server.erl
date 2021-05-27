@@ -42,21 +42,25 @@ game_controller(GameStatus) ->
 	  NewGameStatus = element(2, RegistrationResult),
 	  PlayerId ! ResponseForUser,
 	  game_controller(NewGameStatus);
-
       {get_players, From} ->
 	  From ! maps:get(players, GameStatus),
 	  game_controller(GameStatus);
-      % {play, From, Move} ->
-      %     PlayResult = play(Move,GameStatus),
-      %     RespondForUser = element(1,PlauResult),
-      %     NewStatus = element(2,PlayResult),
-      %     Done = element(3,PlayResult),
-      %     game_controller(NewStatus);
+
+      {move, PlayerId, Move} ->
+	  Play = play(maps:get(board, GameStatus), PlayerId,Move),
+	  NewBoard = {confirm, Play},
+	  PlayerId ! NewBoard,
+	  game_controller(GameStatus);
+
+      %   PlayResult = play(Move,GameStatus),
+      %   RespondForUser = element(1,PlauResult),
+      %   NewStatus = element(2,PlayResult),
+      %   Done = element(3,PlayResult),
+      %   game_controller(NewStatus);
       {print, PlayerId} ->
 	  Board = {gameboard, maps:get(board, GameStatus)},
 	  PlayerId ! Board,
 	  game_controller(GameStatus);
-
       {exit} -> io:fwrite("See you!")
     end.
 
@@ -64,9 +68,8 @@ start_server() ->
     % Here, we initialize the map and status
     io:format("Starting the server~n"),
     io:format("Handling game ~n"),
-    Gameboard = {{" - ", " - ", " - "}, 
-                 {" - ", " - ", " - "},
-		         {" - ", " - ", " - "}},
+    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
 		      score => [0, 0, 0]},
@@ -116,9 +119,28 @@ internal_register_player(PlayersList) ->
 % play(Map) ->
 %     receive
 %         {play, Row, Col, Symbol} ->
+holder(Move,Board) -> 
+	X = element(1, Move),
+	Y = element(2, Move),
+	S = element(3, Move),
+	NewBoard = setelement(X,element(Y,Board),S), 
+	NewBoard2 = setelement(X,Board,NewBoard).
+
+play(GameBoard, PlayerID, Move) ->
+    % NewBoard = holder(Move,GameBoard).
+	holder(Move,GameBoard).
 
 
 
+board(Board, X) ->
+    if X < 3 ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
+	   board(Board, X + 1);
+       true ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
+    end.
+
+% TODO: Set symbol on the board. 
 % start_game() ->
 %     spawn(play(#{}))
 
