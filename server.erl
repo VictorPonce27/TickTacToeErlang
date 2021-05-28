@@ -62,7 +62,7 @@ game_controller(GameStatus) ->
 			  io:fwrite("Winner!");
 		true ->
 			PlayerId ! {game, "Keep playing!"},
-			io:fwrite("Keep playing1")
+			io:fwrite("Keep playing1"),
 		end,
 
 	  game_controller(NewGameStatus);
