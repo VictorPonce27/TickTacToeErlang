@@ -7,6 +7,8 @@
 % In the messages we will need to handle registration, plays, etc.
 % The clients will know the name of the server and even the registered name so they can send messages directly.
 % -- e.g. In a client, we call {central_server NodeName} ! MSG
+% maps:put(turn, 1, GameStatus)
+%maps:get(turn, GameStatus)
 
 handle_player_reg(PlayerId, GameStatus) ->
     CurrentPlayers = maps:get(players, GameStatus),
@@ -23,6 +25,10 @@ handle_player_reg(PlayerId, GameStatus) ->
 	  NewPlayersList = CurrentPlayers ++ PlayerId,
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
+		maps:fold(
+			fun(K, V, ok) ->
+				io:format("~p: ~p~n", [K, V])
+			end, ok, GameStatus),
 	  {RegistrationResult, NewGameStatus};
       2 ->
 	  RegistrationResult = {error, "No more players allowed"},
@@ -51,17 +57,17 @@ game_controller(GameStatus) ->
 	  PlayerId ! NewBoard,
 	  NewGameStatus = maps:put(board, Play, GameStatus),
 	  Vert = check_vertical(NewGameStatus, element(1, Move), element(3, Move)),
-	  Hori = check_vertical(NewGameStatus, element(2, Move), element(3, Move)),
-	  Diag = check_vertical(NewGameStatus, element(3, Move)),
+	  Hori = check_horizontal(NewGameStatus, element(2, Move), element(3, Move)),
+	  Diag = check_diagonal(NewGameStatus, element(3, Move)),
 
 	  Answer = Vert + Hori + Diag,
 
 	  if 
 		  Answer > 0 ->
-			  PlayerId ! "Winner!";
-		true ->
-			PlayerId ! "Keep playing!"
-		end.
+			  	PlayerId ! "Winner!";
+			true ->
+				PlayerId ! "Keep playing!"
+	end.
 
 	  game_controller(NewGameStatus);
 
@@ -101,7 +107,7 @@ check_horizontal(GameStatus, Y, Sign) ->
 			0
 		end.
 
-check_vertical(GameStatus, Sign) ->
+check_diagonal(GameStatus, Sign) ->
 	io:fwrite("Checking move ~n"),
 	Board = maps:get(board, GameStatus),
 	UpL = element(1, element(1, Board)),
@@ -175,8 +181,16 @@ holder(Move,Board) ->
 	X = element(1, Move),
 	Y = element(2, Move),
 	S = element(3, Move),
-	NewBoard = setelement(X,element(Y,Board),S), 
-	setelement(Y,Board,NewBoard).
+	%NewBoard = setelement(X,element(Y,Board),S), 
+	%setelement(Y,Board,NewBoard)
+	if 
+        Compare == " - "  -> 
+            NewBoard = setelement(X,element(Y,Board),S), 
+            setelement(X,Board,NewBoard);
+        true -> 
+            io:fwrite("Invalid position try again"),
+            Board
+	end.
 
 play(GameBoard, PlayerID, Move) ->
     % NewBoard = holder(Move,GameBoard).
