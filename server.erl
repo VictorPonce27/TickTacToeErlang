@@ -1,7 +1,6 @@
 -module(server).
 
--export([game_controller/1, get_players/0,
-	 start_server/0]).
+-export([game_controller/1, get_players/0, start_server/0]).
 
 % The server must be started first
 % It will initialize the state and will spawn a process that will be listening to messages from the clients.
@@ -42,25 +41,39 @@ game_controller(GameStatus) ->
 	  NewGameStatus = element(2, RegistrationResult),
 	  PlayerId ! ResponseForUser,
 	  game_controller(NewGameStatus);
-
       {get_players, From} ->
 	  From ! maps:get(players, GameStatus),
 	  game_controller(GameStatus);
-      % {play, From, Move} ->
-      %     PlayResult = play(Move,GameStatus),
-      %     RespondForUser = element(1,PlauResult),
-      %     NewStatus = element(2,PlayResult),
-      %     Done = element(3,PlayResult),
-      %     game_controller(NewStatus);
+
+      {move, PlayerId, Move} ->
+	  Play = play(maps:get(board, GameStatus), PlayerId,Move),
+	  NewBoard = {confirm, Play},
+	  PlayerId ! NewBoard,
+	  NewGameStatus = maps:put(board, Play, GameStatus),
+	  Vert = check_vertical(NewGameStatus, element(1, Move), element(3, Move)),
+	  Hori = check_vertical(NewGameStatus, element(2, Move), element(3, Move)),
+	  Diag = check_vertical(NewGameStatus, element(3, Move)),
+
+	  Answer = Vert + Hori + Diag,
+
+	  if 
+		  Answer > 0 ->
+			  PlayerId ! "Winner!";
+		true ->
+			PlayerId ! "Keep playing!"
+		end.
+
+	  game_controller(NewGameStatus);
+
+      %   PlayResult = play(Move,GameStatus),
+      %   RespondForUser = element(1,PlauResult),
+      %   NewStatus = element(2,PlayResult),
+      %   Done = element(3,PlayResult),
+      %   game_controller(NewStatus);
       {print, PlayerId} ->
 	  Board = {gameboard, maps:get(board, GameStatus)},
 	  PlayerId ! Board,
 	  game_controller(GameStatus);
-
-	  {move, X, PlayerId} ->
-		Message = check_vertical(GameStatus, " X "),
-		PlayerId ! {ok, Message};
-
       {exit} -> io:fwrite("See you!")
     end.
 
@@ -71,9 +84,9 @@ check_vertical(GameStatus, X, Sign) ->
 	X2 = element(X, element(2,Board)),
 	X3 = element(X, element(3,Board)),
 	if X1 == Sign andalso X2 == Sign andalso X3 == Sign ->
-		"Winner!";
+		1;
 		true ->
-			"Keep playing!"
+			0
 		end.
 
 check_horizontal(GameStatus, Y, Sign) ->
@@ -83,9 +96,9 @@ check_horizontal(GameStatus, Y, Sign) ->
 	Y2 = element(2, element(Y, Board)),
 	Y3 = element(3, element(Y, Board)),
 	if Y1 == Sign andalso Y2 == Sign andalso Y3 == Sign ->
-		"Winner!";
+		1;
 		true ->
-			"Keep playing!"
+			0
 		end.
 
 check_vertical(GameStatus, Sign) ->
@@ -97,19 +110,18 @@ check_vertical(GameStatus, Sign) ->
 	UpR = element(3, element(1, Board)),
 	LowR = element(3, element(3, Board)),
 	if 
-		UpL == Sign andalso Mid == Sign andalso LowR == Sign -> "Winner!";
-		UpR == Sign andalso Mid == Sign andalso LowL == Sign -> "Winner!";
+		UpL == Sign andalso Mid == Sign andalso LowR == Sign -> 1;
+		UpR == Sign andalso Mid == Sign andalso LowL == Sign -> 1;
 		true ->
-			"Keep playing!"
+			0
 		end.
 
 start_server() ->
     % Here, we initialize the map and status
     io:format("Starting the server~n"),
     io:format("Handling game ~n"),
-    Gameboard = {{" - ", " - ", " X "}, 
-                 {" - ", " X ", " - "},
-		         {" X ", " - ", " - "}},
+    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
 		      score => [0, 0, 0]},
@@ -159,9 +171,28 @@ internal_register_player(PlayersList) ->
 % play(Map) ->
 %     receive
 %         {play, Row, Col, Symbol} ->
+holder(Move,Board) -> 
+	X = element(1, Move),
+	Y = element(2, Move),
+	S = element(3, Move),
+	NewBoard = setelement(X,element(Y,Board),S), 
+	setelement(Y,Board,NewBoard).
+
+play(GameBoard, PlayerID, Move) ->
+    % NewBoard = holder(Move,GameBoard).
+	holder(Move,GameBoard).
 
 
 
+board(Board, X) ->
+    if X < 3 ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
+	   board(Board, X + 1);
+       true ->
+	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
+    end.
+
+% TODO: Set symbol on the board. 
 % start_game() ->
 %     spawn(play(#{}))
 

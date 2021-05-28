@@ -1,6 +1,6 @@
 -module(player).
 
--export([move/2, print/1, register_with_server/1]).
+-export([print/1, register_with_server/1, move/1]).
 
 % Call like: player:register_with_server('server@DESKTOP-V6V2QAT').
 register_with_server(ServerName) ->
@@ -18,18 +18,29 @@ register_with_server(ServerName) ->
 %     end,
 %     _.
 
-move(ServerName, X) ->
-    {central_server, ServerName} ! {move, X, self()},
-    receive
-        {ok, Message} -> Message,
-    io:fwrite("~s,~n", [Message])
-end.
+% move(ServerName, X) ->
+%     {central_server, ServerName} ! {move, X, self()},
+%     receive
+%         {ok, Message} -> Message,
+%     io:fwrite("~s,~n", [Message])
+% end.
 
 print(ServerName) ->
     {central_server, ServerName} ! {print, self()},
     receive 
         {gameboard, GameBoard} -> GameBoard,
     board(GameBoard,1)
+end. 
+
+move(ServerName) -> 
+    {ok,X} = io:read("Enter your position for X: "), 
+    {ok,Y} = io:read("Enter your position for Y: "), 
+    {ok,S} = io:read("Enter your symbol: "),
+    Move = {X,Y,S}, 
+    {central_server, ServerName} ! {move,self(),Move}, 
+    receive 
+        {confirm, Answer} -> Answer,
+        board(Answer,1)
 end. 
 
 board(Board, X) ->
