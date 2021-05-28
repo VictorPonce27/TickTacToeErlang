@@ -51,17 +51,19 @@ game_controller(GameStatus) ->
 	  PlayerId ! NewBoard,
 	  NewGameStatus = maps:put(board, Play, GameStatus),
 	  Vert = check_vertical(NewGameStatus, element(1, Move), element(3, Move)),
-	  Hori = check_vertical(NewGameStatus, element(2, Move), element(3, Move)),
-	  Diag = check_vertical(NewGameStatus, element(3, Move)),
+	  Hori = check_horizontal(NewGameStatus, element(2, Move), element(3, Move)),
+	  Diag = check_diagonal(NewGameStatus, element(3, Move)),
 
 	  Answer = Vert + Hori + Diag,
 
 	  if 
 		  Answer > 0 ->
-			  PlayerId ! "Winner!";
+			  PlayerId ! {game,"Winner!"},
+			  io:fwrite("Winner!");
 		true ->
-			PlayerId ! "Keep playing!"
-		end.
+			PlayerId ! {game, "Keep playing!"},
+			io:fwrite("Keep playing1")
+		end,
 
 	  game_controller(NewGameStatus);
 
@@ -101,7 +103,7 @@ check_horizontal(GameStatus, Y, Sign) ->
 			0
 		end.
 
-check_vertical(GameStatus, Sign) ->
+check_diagonal(GameStatus, Sign) ->
 	io:fwrite("Checking move ~n"),
 	Board = maps:get(board, GameStatus),
 	UpL = element(1, element(1, Board)),
