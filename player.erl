@@ -39,8 +39,15 @@ move(ServerName) ->
     Move = {X,Y,S}, 
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
+        {turn, Confirm} -> Confirm;
         {confirm, Answer} -> Answer,
-        board(Answer,1)
+        Condition=is_tuple(Answer),
+        if 
+            Condition -> 
+                board(Answer,1);
+            true ->
+                io:fwrite("Nel perro")
+        end
 end. 
 
 board(Board, X) ->

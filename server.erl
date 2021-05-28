@@ -1,14 +1,14 @@
 -module(server).
 
 -export([game_controller/1, get_players/0, start_server/0]).
-
+-import(lists,[nth/2]).
 % The server must be started first
 % It will initialize the state and will spawn a process that will be listening to messages from the clients.
 % In the messages we will need to handle registration, plays, etc.
 % The clients will know the name of the server and even the registered name so they can send messages directly.
 % -- e.g. In a client, we call {central_server NodeName} ! MSG
 % maps:put(turn, 1, GameStatus)
-%maps:get(turn, GameStatus)
+% maps:get(turn, GameStatus)
 
 handle_player_reg(PlayerId, GameStatus) ->
     CurrentPlayers = maps:get(players, GameStatus),
@@ -25,10 +25,6 @@ handle_player_reg(PlayerId, GameStatus) ->
 	  NewPlayersList = CurrentPlayers ++ PlayerId,
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
-		% maps:fold(
-		% 	fun(K, V, ok) ->
-		% 		io:format("~p: ~p~n", [K, V])
-		% 	end, ok, GameStatus),
 	  {RegistrationResult, NewGameStatus};
       2 ->
 	  RegistrationResult = {error, "No more players allowed"},
@@ -52,24 +48,46 @@ game_controller(GameStatus) ->
 	  game_controller(GameStatus);
 
       {move, PlayerId, Move} ->
-	  Play = play(maps:get(board, GameStatus), PlayerId,Move),
+		Turn=maps:get(turn, GameStatus),
+		ConditionTurn1 = Turn rem 2 /= 0,
+		ConditionTurn2 = Turn rem 2 == 0,
+		MoveSymbol = element(3,Move),
+		io:fwrite("~w",[MoveSymbol]),
+		  if 
+			ConditionTurn1 andalso MoveSymbol == "X"   ->
+				Newturn = Turn + 1,
+				io:fwrite("~w",[Newturn]),
+				NewGameStatus= maps:put(turn, Newturn ,GameStatus);
+			ConditionTurn2 andalso MoveSymbol == "O"  ->  
+				Newturn = Turn + 1,
+				io:fwrite("~w",[Newturn]),
+				NewGameStatus =maps:put(turn, Newturn, GameStatus);
+			true ->
+				PlayerId ! {turn,"not your turn"},
+				game_controller(GameStatus),
+				NewGameStatus=GameStatus
+			end, 
+
+	  Play = play(maps:get(board, NewGameStatus), PlayerId,Move),
 	  NewBoard = {confirm, Play},
 	  PlayerId ! NewBoard,
-	  NewGameStatus = maps:put(board, Play, GameStatus),
-	  Vert = check_vertical(NewGameStatus, element(1, Move), element(3, Move)),
-	  Hori = check_horizontal(NewGameStatus, element(2, Move), element(3, Move)),
-	  Diag = check_diagonal(NewGameStatus, element(3, Move)),
+	  FinalGameStatus = maps:put(board, Play, NewGameStatus),
+	  Vert = check_vertical(FinalGameStatus, element(1, Move), element(3, Move)),
+	  Hori = check_horizontal(FinalGameStatus, element(2, Move), element(3, Move)),
+	  Diag = check_diagonal(FinalGameStatus, element(3, Move)),
 
 	  Answer = Vert + Hori + Diag,
 
 	  if 
 		  Answer > 0 ->
-			  	PlayerId ! "Winner!";
-			true ->
-				PlayerId ! "Keep playing!"
-	end.
+			  PlayerId ! {game,"Winner!"},
+			  io:fwrite("Winner!");
+		true ->
+			PlayerId ! {game, "Keep playing!"},
+			io:fwrite("Keep playing")
+		end,
 
-	  game_controller(NewGameStatus);
+	  game_controller(FinalGameStatus);
 
       %   PlayResult = play(Move,GameStatus),
       %   RespondForUser = element(1,PlauResult),
@@ -84,7 +102,6 @@ game_controller(GameStatus) ->
     end.
 
 check_vertical(GameStatus, X, Sign) ->
-	io:fwrite("Checking move ~n"),
 	Board = maps:get(board, GameStatus),
 	X1 = element(X, element(1,Board)),
 	X2 = element(X, element(2,Board)),
@@ -96,7 +113,6 @@ check_vertical(GameStatus, X, Sign) ->
 		end.
 
 check_horizontal(GameStatus, Y, Sign) ->
-	io:fwrite("Checking move ~n"),
 	Board = maps:get(board, GameStatus),
 	Y1 = element(1, element(Y, Board)),
 	Y2 = element(2, element(Y, Board)),
@@ -108,7 +124,6 @@ check_horizontal(GameStatus, Y, Sign) ->
 		end.
 
 check_diagonal(GameStatus, Sign) ->
-	io:fwrite("Checking move ~n"),
 	Board = maps:get(board, GameStatus),
 	UpL = element(1, element(1, Board)),
 	Mid = element(2, element(2, Board)),
@@ -130,7 +145,7 @@ start_server() ->
 		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
-		      score => [0, 0, 0]},
+		      score => [0, 0, 0], turn=> 1},
     Controller_Pid = spawn(?MODULE, game_controller,
 			   [InitialStatus]),
     register(central_server, Controller_Pid).
@@ -181,12 +196,13 @@ holder(Move,Board) ->
 	X = element(1, Move),
 	Y = element(2, Move),
 	S = element(3, Move),
+	Compare = element(X,element(Y,Board)),
 	%NewBoard = setelement(X,element(Y,Board),S), 
 	%setelement(Y,Board,NewBoard)
 	if 
         Compare == " - "  -> 
             NewBoard = setelement(X,element(Y,Board),S), 
-            setelement(X,Board,NewBoard);
+            setelement(Y,Board,NewBoard);
         true -> 
             io:fwrite("Invalid position try again"),
             Board
