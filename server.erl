@@ -1,7 +1,6 @@
 -module(server).
 
--export([game_controller/1, get_players/0,
-	 start_server/0]).
+-export([game_controller/1, get_players/0, start_server/0]).
 
 % The server must be started first
 % It will initialize the state and will spawn a process that will be listening to messages from the clients.
@@ -14,13 +13,13 @@ handle_player_reg(PlayerId, GameStatus) ->
     NumOfPlayers = length(CurrentPlayers),
     case NumOfPlayers of
       0 ->
-	  RegistrationResult = {success, symbol, "X"},
+	  RegistrationResult = {success, symbol, " X "},
 	  NewPlayersList = [PlayerId],
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
 	  {RegistrationResult, NewGameStatus};
       1 ->
-	  RegistrationResult = {success, symbol, "O"},
+	  RegistrationResult = {success, symbol, " O "},
 	  NewPlayersList = CurrentPlayers ++ PlayerId,
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
@@ -50,7 +49,21 @@ game_controller(GameStatus) ->
 	  Play = play(maps:get(board, GameStatus), PlayerId,Move),
 	  NewBoard = {confirm, Play},
 	  PlayerId ! NewBoard,
-	  game_controller(GameStatus);
+	  NewGameStatus = maps:put(board, Play, GameStatus),
+	  Vert = check_vertical(NewGameStatus, element(1, Move), element(3, Move)),
+	  Hori = check_vertical(NewGameStatus, element(2, Move), element(3, Move)),
+	  Diag = check_vertical(NewGameStatus, element(3, Move)),
+
+	  Answer = Vert + Hori + Diag,
+
+	  if 
+		  Answer > 0 ->
+			  PlayerId ! "Winner!";
+		true ->
+			PlayerId ! "Keep playing!"
+		end.
+
+	  game_controller(NewGameStatus);
 
       %   PlayResult = play(Move,GameStatus),
       %   RespondForUser = element(1,PlauResult),
@@ -63,6 +76,45 @@ game_controller(GameStatus) ->
 	  game_controller(GameStatus);
       {exit} -> io:fwrite("See you!")
     end.
+
+check_vertical(GameStatus, X, Sign) ->
+	io:fwrite("Checking move ~n"),
+	Board = maps:get(board, GameStatus),
+	X1 = element(X, element(1,Board)),
+	X2 = element(X, element(2,Board)),
+	X3 = element(X, element(3,Board)),
+	if X1 == Sign andalso X2 == Sign andalso X3 == Sign ->
+		1;
+		true ->
+			0
+		end.
+
+check_horizontal(GameStatus, Y, Sign) ->
+	io:fwrite("Checking move ~n"),
+	Board = maps:get(board, GameStatus),
+	Y1 = element(1, element(Y, Board)),
+	Y2 = element(2, element(Y, Board)),
+	Y3 = element(3, element(Y, Board)),
+	if Y1 == Sign andalso Y2 == Sign andalso Y3 == Sign ->
+		1;
+		true ->
+			0
+		end.
+
+check_vertical(GameStatus, Sign) ->
+	io:fwrite("Checking move ~n"),
+	Board = maps:get(board, GameStatus),
+	UpL = element(1, element(1, Board)),
+	Mid = element(2, element(2, Board)),
+	LowL = element(1, element(3, Board)),
+	UpR = element(3, element(1, Board)),
+	LowR = element(3, element(3, Board)),
+	if 
+		UpL == Sign andalso Mid == Sign andalso LowR == Sign -> 1;
+		UpR == Sign andalso Mid == Sign andalso LowL == Sign -> 1;
+		true ->
+			0
+		end.
 
 start_server() ->
     % Here, we initialize the map and status
@@ -120,19 +172,11 @@ internal_register_player(PlayersList) ->
 %     receive
 %         {play, Row, Col, Symbol} ->
 holder(Move,Board) -> 
-    X = element(1, Move),
-    Y = element(2, Move),
-    S = element(3, Move),
-    Compare = element(X,element(Y,Board)),
-
-    if 
-        Compare == " - "  -> 
-            NewBoard = setelement(X,element(Y,Board),S), 
-            NewBoard2 = setelement(X,Board,NewBoard);
-        true -> 
-            io:fwrite("Invalid position try again"),
-            Board
-    end.
+	X = element(1, Move),
+	Y = element(2, Move),
+	S = element(3, Move),
+	NewBoard = setelement(X,element(Y,Board),S), 
+	setelement(Y,Board,NewBoard).
 
 play(GameBoard, PlayerID, Move) ->
     % NewBoard = holder(Move,GameBoard).

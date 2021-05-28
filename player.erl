@@ -18,6 +18,13 @@ register_with_server(ServerName) ->
 %     end,
 %     _.
 
+% move(ServerName, X) ->
+%     {central_server, ServerName} ! {move, X, self()},
+%     receive
+%         {ok, Message} -> Message,
+%     io:fwrite("~s,~n", [Message])
+% end.
+
 print(ServerName) ->
     {central_server, ServerName} ! {print, self()},
     receive 
@@ -26,9 +33,9 @@ print(ServerName) ->
 end. 
 
 move(ServerName) -> 
-    {ok, X} = io:read("Enter your position for X: "), 
-    {ok, Y} = io:read("Enter your position for Y: "), 
-    {ok, S} = io:read("Enter your symbol: "),
+    {ok,X} = io:read("Enter your position for X: "), 
+    {ok,Y} = io:read("Enter your position for Y: "), 
+    {ok,S} = io:read("Enter your symbol: "),
     Move = {X,Y,S}, 
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
