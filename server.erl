@@ -25,10 +25,10 @@ handle_player_reg(PlayerId, GameStatus) ->
 	  NewPlayersList = CurrentPlayers ++ PlayerId,
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
-		maps:fold(
-			fun(K, V, ok) ->
-				io:format("~p: ~p~n", [K, V])
-			end, ok, GameStatus),
+		% maps:fold(
+		% 	fun(K, V, ok) ->
+		% 		io:format("~p: ~p~n", [K, V])
+		% 	end, ok, GameStatus),
 	  {RegistrationResult, NewGameStatus};
       2 ->
 	  RegistrationResult = {error, "No more players allowed"},
