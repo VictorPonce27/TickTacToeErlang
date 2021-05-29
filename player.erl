@@ -11,20 +11,6 @@ register_with_server(ServerName) ->
     end,
     AssignedSymbol.
 
-% signOut(ServerName) ->
-%     {central_server, ServerName} ! {exit, self()},
-%     receive
-%         {done,} ->
-%     end,
-%     _.
-
-% move(ServerName, X) ->
-%     {central_server, ServerName} ! {move, X, self()},
-%     receive
-%         {ok, Message} -> Message,
-%     io:fwrite("~s,~n", [Message])
-% end.
-
 print(ServerName) ->
     {central_server, ServerName} ! {print, self()},
     receive 
@@ -41,13 +27,19 @@ move(ServerName) ->
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
         {turn, Confirm} -> Confirm;
+
+        {badmove, BadMove} -> BadMove,
+        io:fwrite("~s",[BadMove]);
+
         {confirm, Answer} -> Answer,
+        
         Condition=is_tuple(Answer),
         if 
             Condition -> 
                 board(Answer,1);
+                
             true ->
-                io:fwrite("Nel perro")
+            io:fwrite("~s",[Answer])
         end
     end.
 
@@ -66,12 +58,4 @@ board(Board, X) ->
        true ->
 	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
     end.
-
-% move(ServerName, Move,Symbol) ->
-%     {central_server, ServerName} ! {play, self(), Move},
-
-%     receive
-%         {}
-
-% Check that we can also do erpc:call('server@DESKTOP-V6V2QAT', server, get_players,[]).
-
+    
