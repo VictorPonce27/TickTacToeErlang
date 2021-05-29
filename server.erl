@@ -48,6 +48,7 @@ game_controller(GameStatus) ->
 	  game_controller(GameStatus);
 
       {move, PlayerId, Move} ->
+		io:fwrite("Recieved the Move of the player"),
 		Turn=maps:get(turn, GameStatus),
 		ConditionTurn1 = Turn rem 2 /= 0,
 		ConditionTurn2 = Turn rem 2 == 0,
@@ -98,6 +99,10 @@ game_controller(GameStatus) ->
 	  Board = {gameboard, maps:get(board, GameStatus)},
 	  PlayerId ! Board,
 	  game_controller(GameStatus);
+	  {getboard, PlayerID} -> 
+		  PlayerID ! {client_server,maps:get(board,GameStatus)}, 
+		  game_controller(GameStatus); 
+
       {exit} -> io:fwrite("See you!")
     end.
 

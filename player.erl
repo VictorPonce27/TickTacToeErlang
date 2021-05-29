@@ -33,6 +33,7 @@ print(ServerName) ->
 end. 
 
 move(ServerName) -> 
+    getBoard(ServerName),
     {ok,X} = io:read("Enter your position for X: "), 
     {ok,Y} = io:read("Enter your position for Y: "), 
     {ok,S} = io:read("Enter your symbol: "),
@@ -48,7 +49,15 @@ move(ServerName) ->
             true ->
                 io:fwrite("Nel perro")
         end
-end. 
+    end.
+
+getBoard(ServerName) -> 
+    {central_server,ServerName} ! {getboard,self()}, 
+    receive 
+        {client_server, Board} -> Board, 
+        board(Board,1)
+    end.   
+
 
 board(Board, X) ->
     if X < 3 ->
