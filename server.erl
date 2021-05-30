@@ -81,6 +81,7 @@ game_controller(GameStatus) ->
 		  Answer > 0 ->
 			  PlayerId ! {confirm,"Winner!"},
 			  io:fwrite("message of winner is sent");
+			% TODO:need to clean the board when there is a winer and send it to both players.
 			true ->
 			NewBoard = {confirm, Play},
 			PlayerId ! NewBoard
