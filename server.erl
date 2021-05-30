@@ -49,7 +49,7 @@ game_controller(GameStatus) ->
 		game_controller(GameStatus);
 
       {move, PlayerId, Move} ->
-		io:fwrite("Recieved the Move of the player"),
+		io:fwrite("Recieved the Move of the player~n"),
 		Turn=maps:get(turn, GameStatus),
 		ConditionTurn1 = Turn rem 2 /= 0,
 		ConditionTurn2 = Turn rem 2 == 0,
@@ -57,7 +57,7 @@ game_controller(GameStatus) ->
 		State = validMove(maps:get(board,GameStatus),Move),
 		io:fwrite("~w",[MoveSymbol]),
 		  if
-			ConditionTurn1 andalso MoveSymbol == "X"   ->
+			ConditionTurn1 andalso MoveSymbol == " X "   ->
 				if
 					State == 1 ->
 						Newturn = Turn + 1,
@@ -70,7 +70,7 @@ game_controller(GameStatus) ->
 					PlayerId ! {valid,"That spot is already being used, try another spot"},
 					game_controller(GameStatus)
 				end;
-			ConditionTurn2 andalso MoveSymbol == "O"  ->
+			ConditionTurn2 andalso MoveSymbol == " O "  ->
 				if
 					State == 1 ->
 						Newturn = Turn + 1,
@@ -87,7 +87,7 @@ game_controller(GameStatus) ->
 				PlayerId ! {turn,"not your turn"},
 				game_controller(GameStatus)
 			end,
-			io:frite("sucessfull");
+			io:frite("sucessfull~n");
 
       {print, PlayerId} ->
 		Board = {gameboard, maps:get(board, GameStatus)},
@@ -98,7 +98,7 @@ game_controller(GameStatus) ->
 		  PlayerID ! {client_server,maps:get(board,GameStatus)},
 		  game_controller(GameStatus);
 
-      {exit} -> io:fwrite("See you!")
+      {exit} -> io:fwrite("See you!~n")
     end.
 
 check_vertical(GameStatus, X, Sign) ->
@@ -144,7 +144,7 @@ start_server() ->
 		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
-		      score => [0, 0, 0], turn => 1},
+		      score => {0, 0, 0}, turn => 1},
     Controller_Pid = spawn(?MODULE, game_controller,
 			   [InitialStatus]),
     register(central_server, Controller_Pid).
@@ -204,7 +204,25 @@ play(Board, PlayerId, Move, GameStatus) ->
     Answer = Vert + Hori + Diag,
     if Answer > 0 ->
 	   PlayerId ! {confirm, "Winner!"},
-	   io:fwrite("message of winner is sent");
+	   io:fwrite("message of winner is sent ~n"),
+	   ScoreX = element(1,maps:get(score, GameStatus)),
+	   ScoreTie =  element(2,maps:get(score, GameStatus)),
+	   ScoreO = element(3,maps:get(score, GameStatus)),
+	   if
+		   S == " X " ->
+			   Score = {ScoreX+1, ScoreTie, ScoreO};
+			   true ->
+				   Score = {ScoreX, ScoreTie, ScoreO+1}
+				   
+		end,
+	    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
+    	%!Game board goes here
+		io:fwrite("~w ~n", [Score]),
+    	TempGameStatus = maps:put(score, Score, GameStatus),
+		Temp2GameStatus = maps:put(board, Gameboard, TempGameStatus),
+		Turn = maps:get(turn, Temp2GameStatus),
+		maps:put(turn, Turn+1, Temp2GameStatus);
        true ->
 	   FinalGameStatus                        % NewBoard = {confirm, NewGameStatus}
     end.
@@ -213,6 +231,6 @@ validMove(Board, Move) ->
     X = element(1, Move),
     Y = element(2, Move),
     Compare = element(X, element(Y, Board)),
-    if Compare == " - " -> Answer = 1;
-       true -> Answer = 0
+    if Compare == " - " -> 1;
+       true -> 0
     end.
