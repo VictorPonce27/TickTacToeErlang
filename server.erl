@@ -48,6 +48,7 @@ game_controller(GameStatus) ->
 	  game_controller(GameStatus);
 
       {move, PlayerId, Move} ->
+		io:fwrite("Recieved the Move of the player"),
 		Turn=maps:get(turn, GameStatus),
 		ConditionTurn1 = Turn rem 2 /= 0,
 		ConditionTurn2 = Turn rem 2 == 0,
@@ -69,35 +70,32 @@ game_controller(GameStatus) ->
 			end, 
 
 	  Play = play(maps:get(board, NewGameStatus), PlayerId,Move),
-	  NewBoard = {confirm, Play},
-	  PlayerId ! NewBoard,
 	  FinalGameStatus = maps:put(board, Play, NewGameStatus),
 	  Vert = check_vertical(FinalGameStatus, element(1, Move), element(3, Move)),
 	  Hori = check_horizontal(FinalGameStatus, element(2, Move), element(3, Move)),
 	  Diag = check_diagonal(FinalGameStatus, element(3, Move)),
-
+	  
 	  Answer = Vert + Hori + Diag,
-
+	  
 	  if 
 		  Answer > 0 ->
-			  PlayerId ! {game,"Winner!"},
-			  io:fwrite("Winner!");
-		true ->
-			PlayerId ! {game, "Keep playing!"},
-			io:fwrite("Keep playing")
+			  PlayerId ! {confirm,"Winner!"},
+			  io:fwrite("message of winner is sent");
+			true ->
+			NewBoard = {confirm, Play},
+			PlayerId ! NewBoard
 		end,
-
 	  game_controller(FinalGameStatus);
 
-      %   PlayResult = play(Move,GameStatus),
-      %   RespondForUser = element(1,PlauResult),
-      %   NewStatus = element(2,PlayResult),
-      %   Done = element(3,PlayResult),
-      %   game_controller(NewStatus);
       {print, PlayerId} ->
 	  Board = {gameboard, maps:get(board, GameStatus)},
 	  PlayerId ! Board,
 	  game_controller(GameStatus);
+
+	  {getboard, PlayerID} -> 
+		  PlayerID ! {client_server,maps:get(board,GameStatus)}, 
+		  game_controller(GameStatus); 
+
       {exit} -> io:fwrite("See you!")
     end.
 
@@ -197,8 +195,7 @@ holder(Move,Board, PlayerId) ->
 	Y = element(2, Move),
 	S = element(3, Move),
 	Compare = element(X,element(Y,Board)),
-	%NewBoard = setelement(X,element(Y,Board),S), 
-	%setelement(Y,Board,NewBoard)
+
 	if 
         Compare == " - "  -> 
             NewBoard = setelement(X,element(Y,Board),S), 
