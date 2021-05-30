@@ -29,7 +29,6 @@ move(ServerName) ->
         {turn, Confirm} -> Confirm;
         {valid, Atom} -> Atom;
         {confirm, Answer} -> Answer,
-        
         Condition=is_tuple(Answer),
         if 
             Condition -> 
