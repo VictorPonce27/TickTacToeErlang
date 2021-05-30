@@ -53,39 +53,31 @@ game_controller(GameStatus) ->
 		ConditionTurn1 = Turn rem 2 /= 0,
 		ConditionTurn2 = Turn rem 2 == 0,
 		MoveSymbol = element(3,Move),
+		State = validMove(maps:get(board,GameStatus),Move),
 		io:fwrite("~w",[MoveSymbol]),
 		  if 
 			ConditionTurn1 andalso MoveSymbol == "X"   ->
-				Newturn = Turn + 1,
-				io:fwrite("~w",[Newturn]),
-				NewGameStatus= maps:put(turn, Newturn ,GameStatus);
+				if State == 1 -> 
+					Newturn = Turn + 1,
+					io:fwrite("~w",[Newturn]),
+					play(maps:get(board, GameStatus), PlayerId,Move);
+				true -> 
+					PlayerId = {valid,"That spot is already being used, try another spot"},
+					game_controller(GameStatus)
+				end;
 			ConditionTurn2 andalso MoveSymbol == "O"  ->  
-				Newturn = Turn + 1,
-				io:fwrite("~w",[Newturn]),
-				NewGameStatus =maps:put(turn, Newturn, GameStatus);
+				if State == 1 -> 
+					Newturn = Turn + 1,
+					io:fwrite("~w",[Newturn]),
+					play(maps:get(board, GameStatus), PlayerId,Move);
+				true -> 
+					PlayerId = {valid,"That spot is already being used, try another spot"},
+					game_controller(GameStatus)
+				end;
 			true ->
 				PlayerId ! {turn,"not your turn"},
-				game_controller(GameStatus),
-				NewGameStatus=GameStatus
-			end, 
-
-	  Play = play(maps:get(board, NewGameStatus), PlayerId,Move),
-	  FinalGameStatus = maps:put(board, Play, NewGameStatus),
-	  Vert = check_vertical(FinalGameStatus, element(1, Move), element(3, Move)),
-	  Hori = check_horizontal(FinalGameStatus, element(2, Move), element(3, Move)),
-	  Diag = check_diagonal(FinalGameStatus, element(3, Move)),
-	  
-	  Answer = Vert + Hori + Diag,
-	  
-	  if 
-		  Answer > 0 ->
-			  PlayerId ! {confirm,"Winner!"},
-			  io:fwrite("message of winner is sent");
-			true ->
-			NewBoard = {confirm, Play},
-			PlayerId ! NewBoard
-		end,
-	  game_controller(FinalGameStatus);
+				game_controller(GameStatus)
+			end;
 
       {print, PlayerId} ->
 	  Board = {gameboard, maps:get(board, GameStatus)},
@@ -187,39 +179,36 @@ internal_register_player(PlayersList) ->
 	  io:fwrite("Good bye from internal register player")
     end.
 
-% play(Map) ->
-%     receive
-%         {play, Row, Col, Symbol} ->
-holder(Move,Board, PlayerId) -> 
+play(Board, PlayerId,Move) -> 
 	X = element(1, Move),
 	Y = element(2, Move),
 	S = element(3, Move),
-	Compare = element(X,element(Y,Board)),
+	NewBoard = setelement(X,element(Y,Board),S), 
+    Play = setelement(Y,Board,NewBoard),
 
+	FinalGameStatus = maps:put(board, Play, GameStatus),
+	Vert = check_vertical(FinalGameStatus, element(1, Move), element(3, Move)),
+	Hori = check_horizontal(FinalGameStatus, element(2, Move), element(3, Move)),
+	Diag = check_diagonal(FinalGameStatus, element(3, Move)),
+	  
+	Answer = Vert + Hori + Diag,
+	if 
+		Answer > 0 ->
+			PlayerId ! {confirm,"Winner!"},
+			io:fwrite("message of winner is sent");
+		true ->
+			NewBoard = {confirm, Play},
+			PlayerId ! NewBoard
+	end,
+	  game_controller(FinalGameStatus).
+
+validMove(Board,Move) ->
+	X = element(1, Move),
+	Y = element(2, Move),
+	Compare = element(X,element(Y,Board)),
 	if 
         Compare == " - "  -> 
-            NewBoard = setelement(X,element(Y,Board),S), 
-            setelement(Y,Board,NewBoard);
+           Answer = 1;
         true -> 
-			PlayerId ! {valid,"Invalid position try again "},
-            % io:fwrite("Invalid position try again"),
-            Board
+			Answer = 0
 	end.
-
-play(GameBoard, PlayerId, Move) ->
-    % NewBoard = holder(Move,GameBoard).
-	holder(Move,GameBoard, PlayerId).
-
-
-board(Board, X) ->
-    if X < 3 ->
-	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
-	   board(Board, X + 1);
-       true ->
-	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))])
-    end.
-
-% TODO: Set symbol on the board. 
-% start_game() ->
-%     spawn(play(#{}))
-
