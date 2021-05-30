@@ -27,12 +27,8 @@ move(ServerName) ->
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
         {turn, Confirm} -> Confirm;
-
-        {badmove, BadMove} -> BadMove,
-        io:fwrite("~s",[BadMove]);
-
+        {valid, Atom} -> Atom;
         {confirm, Answer} -> Answer,
-        
         Condition=is_tuple(Answer),
         if 
             Condition -> 
