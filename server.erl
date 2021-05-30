@@ -192,7 +192,7 @@ internal_register_player(PlayersList) ->
 % play(Map) ->
 %     receive
 %         {play, Row, Col, Symbol} ->
-holder(Move,Board) -> 
+holder(Move,Board, PlayerId) -> 
 	X = element(1, Move),
 	Y = element(2, Move),
 	S = element(3, Move),
@@ -204,13 +204,14 @@ holder(Move,Board) ->
             NewBoard = setelement(X,element(Y,Board),S), 
             setelement(Y,Board,NewBoard);
         true -> 
-            io:fwrite("Invalid position try again"),
+			PlayerId ! {valid,"Invalid position try again "},
+            % io:fwrite("Invalid position try again"),
             Board
 	end.
 
-play(GameBoard, PlayerID, Move) ->
+play(GameBoard, PlayerId, Move) ->
     % NewBoard = holder(Move,GameBoard).
-	holder(Move,GameBoard).
+	holder(Move,GameBoard, PlayerId).
 
 
 board(Board, X) ->

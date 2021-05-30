@@ -40,6 +40,7 @@ move(ServerName) ->
     {central_server, ServerName} ! {move,self(),Move}, 
     receive 
         {turn, Confirm} -> Confirm;
+        {valid, Atom} -> Atom;
         {confirm, Answer} -> Answer,
         Condition=is_tuple(Answer),
         if 
