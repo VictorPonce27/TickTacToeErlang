@@ -35,7 +35,7 @@ move(ServerName) ->
                 board(Answer,1);
                 
             true ->
-            io:fwrite("~s",[Answer])
+            io:fwrite("~s~n",[Answer])
         end
     end.
 

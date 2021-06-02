@@ -149,6 +149,18 @@ start_server() ->
 			   [InitialStatus]),
     register(central_server, Controller_Pid).
 
+start(Players, Score, Turn) ->
+	io:format("Handling game ~n"),
+    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
+    %!Game board goes here
+    InitialStatus = #{players => Players, board => Gameboard,
+		      score => Score, turn => Turn},
+    Controller_Pid = spawn(?MODULE, game_controller,
+			   [InitialStatus]),
+    register(central_server, Controller_Pid).
+
+
 % functions like this one can be implemented to get status info in the server.
 % They might be even be called from clients using something like:
 % erpc:call('server@DESKTOP-V6V2QAT', server, get_players,[]).
@@ -222,9 +234,26 @@ play(Board, PlayerId, Move, GameStatus) ->
     	TempGameStatus = maps:put(score, Score, GameStatus),
 		Temp2GameStatus = maps:put(board, Gameboard, TempGameStatus),
 		Turn = maps:get(turn, Temp2GameStatus),
-		maps:put(turn, Turn+1, Temp2GameStatus);
+		game_controller(maps:put(turn, Turn+1, Temp2GameStatus));
        true ->
-	   FinalGameStatus                        % NewBoard = {confirm, NewGameStatus}
+		Tie = checkTie(FinalGameStatus),
+		if
+			Tie == "Tie" ->
+				ScoreX = element(1,maps:get(score, GameStatus)),
+	   			ScoreTie =  element(2,maps:get(score, GameStatus)),
+	   			ScoreO = element(3,maps:get(score, GameStatus)),
+				Score = {ScoreX, ScoreTie+1, ScoreO},
+				TempGameStatus = maps:put(score, Score, GameStatus),
+				Gameboard = {{" - ", " - ", " - "},
+		 		{" - ", " - ", " - "}, {" - ", " - ", " - "}},
+				Temp2GameStatus = maps:put(board, Gameboard, TempGameStatus),
+				Turn = maps:get(turn, Temp2GameStatus),
+				io:fwrite("~w ~n", [Score]),
+				PlayerId ! {confirm,"Tie"},
+				game_controller(maps:put(turn, Turn+1, Temp2GameStatus));
+			true ->
+				FinalGameStatus             	
+		end
     end.
 
 validMove(Board, Move) ->
@@ -234,3 +263,19 @@ validMove(Board, Move) ->
     if Compare == " - " -> 1;
        true -> 0
     end.
+
+checkTie(GameStatus) ->
+	Board = maps:get(board, GameStatus),
+	Row1 = tuple_to_list(element(1, Board)),
+	Row2 = tuple_to_list(element(2, Board)),
+	Row3 = tuple_to_list(element(3, Board)),
+	Pred = fun(L) -> L == " - " end,
+	Status1 = lists:any(Pred, Row1),
+	Status2 = lists:any(Pred, Row2),
+	Status3 = lists:any(Pred, Row3),
+	if 
+		Status1 orelse Status2 orelse Status3 ->
+			"Keeps going";
+		true ->
+			"Tie"
+	end.
