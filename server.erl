@@ -23,7 +23,7 @@ handle_player_reg(PlayerId, GameStatus) ->
 	  {RegistrationResult, NewGameStatus};
       1 ->
 	  RegistrationResult = {success, symbol, " O "},
-	  NewPlayersList = CurrentPlayers ++ PlayerId,
+	  NewPlayersList = lists:append(CurrentPlayers, [PlayerId]),
 	  NewGameStatus = maps:put(players, NewPlayersList,
 				   GameStatus),
 	  {RegistrationResult, NewGameStatus};
@@ -49,35 +49,43 @@ game_controller(GameStatus) ->
 		game_controller(GameStatus);
 
       {move, PlayerId, Move} ->
-		io:fwrite("Recieved the Move of the player"),
+		io:fwrite("Recieved the Move of the player \n"),
 		Turn=maps:get(turn, GameStatus),
 		ConditionTurn1 = Turn rem 2 /= 0,
 		ConditionTurn2 = Turn rem 2 == 0,
+		PlayerList = maps:get(players,GameStatus), 
+		Player1 = lists:nth(1,PlayerList), 
+		Player2 = lists:nth(2,PlayerList), 
+		io:format("~w,~n",[PlayerId]),
+		io:format("~w,~n",[Player1]),
+		io:format("~w,~n",[Player2]),
 		MoveSymbol = element(3,Move),
 		State = validMove(maps:get(board,GameStatus),Move),
 		io:fwrite("~w",[MoveSymbol]),
 		  if
-			ConditionTurn1 andalso MoveSymbol == "X"   ->
+			ConditionTurn1 andalso MoveSymbol == " X "   ->
 				if
 					State == 1 ->
 						Newturn = Turn + 1,
 						io:fwrite("~w",[Newturn]),
 						NewGameStatus = maps:put(turn,Newturn,GameStatus),
 						FinalGameStatus = play(maps:get(board, NewGameStatus), PlayerId,Move,NewGameStatus),
-						PlayerId ! {confirm, maps:get(board,FinalGameStatus)},
+						Player2 ! {client, maps:get(board,FinalGameStatus)},
+						Player1 ! {client, maps:get(board,FinalGameStatus)},
 						game_controller(FinalGameStatus);
 				true ->
 					PlayerId ! {valid,"That spot is already being used, try another spot"},
 					game_controller(GameStatus)
 				end;
-			ConditionTurn2 andalso MoveSymbol == "O"  ->
+			ConditionTurn2 andalso MoveSymbol == " O "  ->
 				if
 					State == 1 ->
 						Newturn = Turn + 1,
 						io:fwrite("~w",[Newturn]),
 						NewGameStatus = maps:put(turn,Newturn,GameStatus),
 						FinalGameStatus = play(maps:get(board, NewGameStatus), PlayerId,Move,NewGameStatus),
-						PlayerId ! {confirm, maps:get(board,FinalGameStatus)},
+						Player2 ! {client, maps:get(board,FinalGameStatus)},
+						Player1 ! {client,maps:get(board,FinalGameStatus)},
 						game_controller(FinalGameStatus);
 				true ->
 					PlayerId ! {valid,"That spot is already being used, try another spot"},
@@ -87,6 +95,7 @@ game_controller(GameStatus) ->
 				PlayerId ! {turn,"not your turn"},
 				game_controller(GameStatus)
 			end,
+
 			io:frite("sucessfull");
 
       {print, PlayerId} ->
@@ -192,6 +201,7 @@ play(Board, PlayerId, Move, GameStatus) ->
     X = element(1, Move),
     Y = element(2, Move),
     S = element(3, Move),
+	PlayerList = maps:get(players,GameStatus), 
     NewBoard = setelement(X, element(Y, Board), S),
     Play = setelement(Y, Board, NewBoard),
     FinalGameStatus = maps:put(board, Play, GameStatus),
@@ -202,11 +212,26 @@ play(Board, PlayerId, Move, GameStatus) ->
     Diag = check_diagonal(FinalGameStatus,
 			  element(3, Move)),
     Answer = Vert + Hori + Diag,
+
+	Player1 = lists:nth(1,PlayerList),
+	Player2 = lists:nth(2,PlayerList),
+
     if Answer > 0 ->
-	   PlayerId ! {confirm, "Winner!"},
-	   io:fwrite("message of winner is sent");
+		if PlayerId == Player1 ->
+			Player1 ! {done, "Winner!"},
+			Player2 !  {done,"Player1 is the winner"},
+			io:fwrite("message of winner is sent"),
+			FinalGameStatus;                       % NewBoard = {confirm, NewGameStatus}
+			true -> 
+				Player2 ! {done, "winner!"}, 
+				Player1 !  {done,"Player2 is the winner"},
+				io:fwrite("message of winner is sent"),
+				FinalGameStatus                       % NewBoard = {confirm, NewGameStatus}
+		end;
        true ->
-	   FinalGameStatus                        % NewBoard = {confirm, NewGameStatus}
+
+		   io:fwrite("no winner yet"),
+		   FinalGameStatus
     end.
 
 validMove(Board, Move) ->
