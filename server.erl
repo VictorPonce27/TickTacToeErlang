@@ -95,8 +95,7 @@ game_controller(GameStatus) ->
 				PlayerId ! {turn,"not your turn"},
 				game_controller(GameStatus)
 			end,
-
-			io:frite("sucessfull");
+			io:frite("sucessfull~n");
 
       {print, PlayerId} ->
 		Board = {gameboard, maps:get(board, GameStatus)},
@@ -107,7 +106,7 @@ game_controller(GameStatus) ->
 		  PlayerID ! {client_server,maps:get(board,GameStatus)},
 		  game_controller(GameStatus);
 
-      {exit} -> io:fwrite("See you!")
+      {exit} -> io:fwrite("See you!~n")
     end.
 
 check_vertical(GameStatus, X, Sign) ->
@@ -153,10 +152,22 @@ start_server() ->
 		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
     %!Game board goes here
     InitialStatus = #{players => [], board => Gameboard,
-		      score => [0, 0, 0], turn => 1},
+		      score => {0, 0, 0}, turn => 1},
     Controller_Pid = spawn(?MODULE, game_controller,
 			   [InitialStatus]),
     register(central_server, Controller_Pid).
+
+start(Players, Score, Turn) ->
+	io:format("Handling game ~n"),
+    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
+    %!Game board goes here
+    InitialStatus = #{players => Players, board => Gameboard,
+		      score => Score, turn => Turn},
+    Controller_Pid = spawn(?MODULE, game_controller,
+			   [InitialStatus]),
+    register(central_server, Controller_Pid).
+
 
 % functions like this one can be implemented to get status info in the server.
 % They might be even be called from clients using something like:
@@ -217,27 +228,72 @@ play(Board, PlayerId, Move, GameStatus) ->
 	Player2 = lists:nth(2,PlayerList),
 
     if Answer > 0 ->
-		if PlayerId == Player1 ->
-			Player1 ! {done, "Winner!"},
-			Player2 !  {done,"Player1 is the winner"},
-			io:fwrite("message of winner is sent"),
-			FinalGameStatus;                       % NewBoard = {confirm, NewGameStatus}
-			true -> 
-				Player2 ! {done, "winner!"}, 
-				Player1 !  {done,"Player2 is the winner"},
+	   ScoreX = element(1,maps:get(score, GameStatus)),
+	   ScoreTie =  element(2,maps:get(score, GameStatus)),
+	   ScoreO = element(3,maps:get(score, GameStatus)),
+	   if
+		   S == " X " ->
+			   	Player1 ! {done, "Winner!"},
+				Player2 !  {done,"Player1 is the winner"},
 				io:fwrite("message of winner is sent"),
-				FinalGameStatus                       % NewBoard = {confirm, NewGameStatus}
-		end;
+			   	Score = {ScoreX+1, ScoreTie, ScoreO};
+			   	true ->
+					Player2 ! {done, "winner!"}, 
+					Player1 !  {done,"Player2 is the winner"},
+					io:fwrite("message of winner is sent"),
+				   	Score = {ScoreX, ScoreTie, ScoreO+1} 
+		end,
+	    Gameboard = {{" - ", " - ", " - "},
+		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
+    	%!Game board goes here
+		io:fwrite("~w ~n", [Score]),
+    	TempGameStatus = maps:put(score, Score, GameStatus),
+		Temp2GameStatus = maps:put(board, Gameboard, TempGameStatus),
+		Turn = maps:get(turn, Temp2GameStatus),
+		game_controller(maps:put(turn, Turn+1, Temp2GameStatus));
        true ->
-
-		   io:fwrite("no winner yet"),
-		   FinalGameStatus
+		Tie = checkTie(FinalGameStatus),
+		if
+			Tie == "Tie" ->
+				ScoreX = element(1,maps:get(score, GameStatus)),
+	   			ScoreTie =  element(2,maps:get(score, GameStatus)),
+	   			ScoreO = element(3,maps:get(score, GameStatus)),
+				Score = {ScoreX, ScoreTie+1, ScoreO},
+				TempGameStatus = maps:put(score, Score, GameStatus),
+				Gameboard = {{" - ", " - ", " - "},
+		 		{" - ", " - ", " - "}, {" - ", " - ", " - "}},
+				Temp2GameStatus = maps:put(board, Gameboard, TempGameStatus),
+				Turn = maps:get(turn, Temp2GameStatus),
+				io:fwrite("~w ~n", [Score]),
+				Player2 ! {done, "Tie!"}, 
+				Player1 !  {done,"Tie!"},
+				io:fwrite("message of winner is sent"),
+				game_controller(maps:put(turn, Turn+1, Temp2GameStatus));
+			true ->
+				FinalGameStatus             	
+		end
     end.
 
 validMove(Board, Move) ->
     X = element(1, Move),
     Y = element(2, Move),
     Compare = element(X, element(Y, Board)),
-    if Compare == " - " -> Answer = 1;
-       true -> Answer = 0
+    if Compare == " - " -> 1;
+       true -> 0
     end.
+
+checkTie(GameStatus) ->
+	Board = maps:get(board, GameStatus),
+	Row1 = tuple_to_list(element(1, Board)),
+	Row2 = tuple_to_list(element(2, Board)),
+	Row3 = tuple_to_list(element(3, Board)),
+	Pred = fun(L) -> L == " - " end,
+	Status1 = lists:any(Pred, Row1),
+	Status2 = lists:any(Pred, Row2),
+	Status3 = lists:any(Pred, Row3),
+	if 
+		Status1 orelse Status2 orelse Status3 ->
+			"Keeps going";
+		true ->
+			"Tie"
+	end.

@@ -44,32 +44,14 @@ print(ServerName) ->
 end. 
 
 move(ServerName) -> 
-    % getBoard(ServerName),
     {ok,X} = io:read("Enter your position for X: "), 
     {ok,Y} = io:read("Enter your position for Y: "), 
     {ok,S} = io:read("Enter your symbol: "),
     Move = {X,Y,S}, 
     {central_server, ServerName} ! {move,whereis(player),Move}.
-    % receive 
-    %     {turn, Confirm} -> Confirm;
-    %     {valid, Atom} -> Atom;
-    %     % {confirm, Answer} -> Answer,
-    %     % Condition=is_tuple(Answer),
-    %     % if 
-    %     %     Condition -> 
-    %     %         board(Answer,1);
-                
-    %     %     true ->
-    %     %     io:fwrite("~s",[Answer])
-    %     % end
-    % end.
 
 getBoard(ServerName) -> 
     {central_server,ServerName} ! {getboard,whereis(player)}.
-    % receive 
-    %     {client_server, Board} -> Board, 
-    %     board(Board,1)
-    % end.   
 
 
 board(Board, X) ->
