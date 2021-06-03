@@ -1,3 +1,6 @@
+% created By Victor Ponce A00827302
+% Created By Sergio Lopez A00827462
+
 -module(server).
 
 -export([game_controller/1, get_players/0,

@@ -1,3 +1,6 @@
+% created By Victor Ponce A00827302
+% Created By Sergio Lopez A00827462
+
 -module(player).
 
 -export([init/1, player_messages/0,
