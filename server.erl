@@ -36,6 +36,8 @@ handle_player_reg(PlayerId, GameStatus) ->
 	   GameStatus} % We dont modify the status if something is not allowed.
     end.
 
+% Funcion que mantendra el control de juego en todo momento
+
 game_controller(GameStatus) ->
     receive
       {register, PlayerId} ->
@@ -51,6 +53,7 @@ game_controller(GameStatus) ->
 		From ! maps:get(players, GameStatus),
 		game_controller(GameStatus);
 
+	% En caso de recibir un movimiento
       {move, PlayerId, Move} ->
 		io:fwrite("Recieved the Move of the player \n"),
 		Turn=maps:get(turn, GameStatus),
@@ -65,8 +68,10 @@ game_controller(GameStatus) ->
 		MoveSymbol = element(3,Move),
 		State = validMove(maps:get(board,GameStatus),Move),
 		io:fwrite("~w",[MoveSymbol]),
+		% Condicion que verifica que el turno sea del jugador
 		  if
 			ConditionTurn1 andalso MoveSymbol == " X "   ->
+				% Condicion que verifica que la casilla no este ocupada
 				if
 					State == 1 ->
 						Newturn = Turn + 1,
@@ -112,6 +117,7 @@ game_controller(GameStatus) ->
       {exit} -> io:fwrite("See you!~n")
     end.
 
+% Funcion que checa si ya se gano en vertical
 check_vertical(GameStatus, X, Sign) ->
     Board = maps:get(board, GameStatus),
     X1 = element(X, element(1, Board)),
@@ -122,6 +128,7 @@ check_vertical(GameStatus, X, Sign) ->
        true -> 0
     end.
 
+% Funcion que checa si ya se gano en horizontal
 check_horizontal(GameStatus, Y, Sign) ->
     Board = maps:get(board, GameStatus),
     Y1 = element(1, element(Y, Board)),
@@ -132,6 +139,7 @@ check_horizontal(GameStatus, Y, Sign) ->
        true -> 0
     end.
 
+% Funcion que checa si ya se gano en diagonal
 check_diagonal(GameStatus, Sign) ->
     Board = maps:get(board, GameStatus),
     UpL = element(1, element(1, Board)),
@@ -211,6 +219,7 @@ internal_register_player(PlayersList) ->
 	  io:fwrite("Good bye from internal register player")
     end.
 
+% Funcioni que registra un movimiento en el tablero del servidor
 play(Board, PlayerId, Move, GameStatus) ->
     X = element(1, Move),
     Y = element(2, Move),
@@ -230,6 +239,7 @@ play(Board, PlayerId, Move, GameStatus) ->
 	Player1 = lists:nth(1,PlayerList),
 	Player2 = lists:nth(2,PlayerList),
 
+	% Condicion que verifica si ya hubo un ganador
     if Answer > 0 ->
 	   ScoreX = element(1,maps:get(score, GameStatus)),
 	   ScoreTie =  element(2,maps:get(score, GameStatus)),
@@ -239,12 +249,14 @@ play(Board, PlayerId, Move, GameStatus) ->
 			   	Player1 ! {done, "Winner!"},
 				Player2 !  {done,"Player1 is the winner"},
 				io:fwrite("message of winner is sent"),
-			   	Score = {ScoreX+1, ScoreTie, ScoreO};
+			   	Score = {ScoreX+1, ScoreTie, ScoreO},
+				Player1 ! {score, Score},
+				Player2 ! {score, Score};
 			   	true ->
 					Player2 ! {done, "winner!"}, 
 					Player1 !  {done,"Player2 is the winner"},
 					io:fwrite("message of winner is sent"),
-				   	Score = {ScoreX, ScoreTie, ScoreO+1} 
+				   	Score = {ScoreX, ScoreTie, ScoreO+1}
 		end,
 	    Gameboard = {{" - ", " - ", " - "},
 		 {" - ", " - ", " - "}, {" - ", " - ", " - "}},
@@ -256,6 +268,7 @@ play(Board, PlayerId, Move, GameStatus) ->
 		game_controller(maps:put(turn, Turn+1, Temp2GameStatus));
        true ->
 		Tie = checkTie(FinalGameStatus),
+		% Condicion que verifica si hubo un empate
 		if
 			Tie == "Tie" ->
 				ScoreX = element(1,maps:get(score, GameStatus)),
@@ -277,6 +290,7 @@ play(Board, PlayerId, Move, GameStatus) ->
 		end
     end.
 
+% Funcion que verifica que sea un movimiento valido
 validMove(Board, Move) ->
     X = element(1, Move),
     Y = element(2, Move),
@@ -285,6 +299,7 @@ validMove(Board, Move) ->
        true -> 0
     end.
 
+% Funcion que busca como minimo un '-' para saber si empataron
 checkTie(GameStatus) ->
 	Board = maps:get(board, GameStatus),
 	Row1 = tuple_to_list(element(1, Board)),

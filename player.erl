@@ -25,7 +25,8 @@ player_messages() ->
     receive
     %   A -> io:fwrite("~p~n", [A]), A, player_messages();
       exit -> io:fwrite("Bye ~n");
-    
+
+        % Se recibe tablero
         {client,Answer} -> Answer, 
         board(Answer,1),
         player_messages();
@@ -34,6 +35,12 @@ player_messages() ->
         io:format("~s,~n",[Answer]),
         player_messages(); 
 
+        % Se recibe marcador
+        {score, Score} -> Score,
+        io:fwrite("~w ~n", [Score]),
+        player_messages();
+
+        % Se recibe ganador
         {done, Answer} -> Answer,
         io:format("~s,~n",[Answer]),
         player_messages()
@@ -46,6 +53,7 @@ print(ServerName) ->
     board(GameBoard,1)
 end. 
 
+% Funcion que toma las coordenadas del movimiento y el signo a ser usado y lo envia al servidor
 move(ServerName) -> 
     {ok,X} = io:read("Enter your position for X: "), 
     {ok,Y} = io:read("Enter your position for Y: "), 
@@ -56,7 +64,7 @@ move(ServerName) ->
 getBoard(ServerName) -> 
     {central_server,ServerName} ! {getboard,whereis(player)}.
 
-
+% Funcion que recibe el tablero y lo imprime
 board(Board, X) ->
     if X < 3 ->
 	   io:fwrite("~s,~n", [tuple_to_list(element(X, Board))]),
